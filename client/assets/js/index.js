@@ -1,21 +1,27 @@
+import { uploadLargeFile, uploadSmallFile } from './utils/index.js';
+
 let i;
 
 WebViewer({
     path: '/assets/js/lib',
+    css: '/assets/css/index.css'
 }, document.getElementById('viewer'))
     .then(async (instance) => {
+        createSetSaveButton(instance);
         const filepath = window.location.search.replace('?filepath=', '');
         i = instance;
+        createSavedModal(instance);
         const doc = await instance.Core.createDocument(filepath, { extension: 'pdf' });
         instance.loadDocument(doc);
     })
 
 const saveButton = document.getElementById('save-button');
-saveButton.addEventListener('click', async () => {
-    let annotationManager = i.Core.annotationManager;
+
+async function saveDocument(instance) {
+    let annotationManager = instance.Core.annotationManager;
     const xfdfString = await annotationManager.exportAnnotations();
-    const content = await i.Core.documentViewer.getDocument().getFileData({ xfdfString });
-    const contentSize = await i.Core.documentViewer.getDocument().getFileSize();
+    const content = await instance.Core.documentViewer.getDocument().getFileData({ xfdfString });
+    const contentSize = await instance.Core.documentViewer.getDocument().getFileSize();
     const isLargeFile = contentSize > 4 * 1024 * 1024;
     const tokenResp = await fetch('/token', {
         method: 'GET',
@@ -44,64 +50,40 @@ saveButton.addEventListener('click', async () => {
     } else {
         uploadSmallFile(itemUrl, content, token);
     }
-});
+}
 
-async function uploadLargeFile(itemUrl, content, token) {
-    const uploadSessionUrl = `${itemUrl}/createUploadSession`;
-    const uploadRequestResp = await fetch(uploadSessionUrl, {
-        method: 'POST',
-        headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            item: {
-              "@microsoft.graph.conflictBehavior": "replace",
-            },
-        }),
+
+
+function createSetSaveButton(instance) {
+    instance.setHeaderItems(function (header) {
+        const saveButton = {
+            type: 'actionButton',
+            dataElement: 'saveDocumentButton',
+            title: 'tool.SaveDocument',
+            img: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M0 0h24v24H0z" fill="none"/><path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/></svg>',
+            onClick: async function() {
+                instance.openElement('loadingModal');
+                await saveDocument(instance);
+                instance.closeElements(['loadingModal']);
+                instance.openElement('savedModal');
+            }
+        } 
+        header.get('viewControlsButton').insertBefore(saveButton);
     });
-    const uploadRequestRespJson = await uploadRequestResp.json();
-    if (uploadRequestRespJson.error) {
-        return alert('upload request fails');
-    }
-    const { "uploadUrl": uploadUrl } = uploadRequestRespJson;
-    const chunkLimit = 1024 * 1024 * 2;
-    const totalSize = content.byteLength;
-    let currentSizeOffset = 0;
-    while(currentSizeOffset < totalSize) {
-        const chunkSize = Math.min(chunkLimit, totalSize - currentSizeOffset);
-        const chunk = content.slice(currentSizeOffset, currentSizeOffset + chunkSize);
+}
 
-        const uploadResp = await fetch(uploadUrl, {
-            method: 'PUT',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Length': chunk.byteLength.toString(),
-                'Content-Range': `bytes ${currentSizeOffset}-${
-                    currentSizeOffset + chunkSize - 1
-                }/${totalSize}`,
-            },
-            body: chunk
-        });
-        if (!uploadResp.ok) {
-            return alert('upload failed')
-        }
-        currentSizeOffset += chunkSize;
-    }
-    return alert('Saved the file successfully!')
-};
-
-async function uploadSmallFile(itemUrl, content, token) {
-    const contentUrl = `${itemUrl}/content`;
-    const uploadResult = await fetch(contentUrl, {
-        body: content,
-        headers: {
-        authorization: `Bearer ${token}`,
+function createSavedModal(instance) {
+    const divInput1 = document.createElement('div');
+    divInput1.innerText = 'File saved successfully.';
+    const modal = {
+        dataElement: 'savedModal',
+        body: {
+            className: 'myCustomModal-body',
+            style: {
+            'text-align': 'center'
+            }, // optional inline styles
+            children: [ divInput1 ], // HTML dom elements
         },
-        method: "PUT",
-    });
-
-    if (!uploadResult.ok) {
-        return alert('Upload failed.')
-    }
+    };
+    instance.UI.addCustomModal(modal);
 }

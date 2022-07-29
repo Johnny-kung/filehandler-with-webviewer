@@ -11,7 +11,7 @@ applyMiddleWares(app);
 
 app.post('/webviewer', async (req, res) => {
     const { token } = req.session;
-
+    console.log(token);
     if (token) {
         const activationItems = `${JSON.parse(req.body.items)[0]}`;
         req.session.activationItems = activationItems;
@@ -40,10 +40,13 @@ app.post('/webviewer', async (req, res) => {
             }
         });
         const authUrl = await authClient.getAuthCodeUrl({
-            scopes: ['openid', 'Files.ReadWrite.Selected'],
+            scopes: ["openid", "Files.ReadWrite.Selected"],
             redirectUri: 'http://localhost:3000/api/auth/login',
             state
         });
+        console.log(authUrl);
+    
+        res.set('x-frame-options', 'SAMEORIGIN');
         res.writeHead(302, {
             location: authUrl,
         });
@@ -82,13 +85,14 @@ app.get('/api/auth/login', async (req, res) => {
         redirectUri: 'http://localhost:3000/api/auth/login',
         scopes: ['openid', 'Files.ReadWrite.All']
     });
-
+    console.log('set session token', tokenResp.accessToken);
     req.session.token = tokenResp.accessToken;
 
     res.redirect(`${state.target}?state=${req.query.state}&token=${tokenResp.accessToken}&expiresOn=${tokenResp.expiresOn}`);
 });
 
 app.get('/token', async (req, res) => {
+    console.log(req.session.token);
     if (req.session.token) {
         res.send({
             message: 'success',

@@ -13,7 +13,7 @@ function applyMiddleWares(app) {
         saveUninitialized: true,
         cookie: {
             maxAge: 1000 * 60 * 60,
-            secure: false
+            secure: false,
         },
         resave: false
     }));
