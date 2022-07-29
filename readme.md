@@ -28,7 +28,7 @@ To set up the project, download the code in this repository.
 
 5. A `.env` file will be created in the root folder when the app registration is done.
 
-6. Run `npm run dev` to start the local server
+6. Run `npm run start:dev` to start the local server
 
 # Resetting cache in development for file handler in Sharepoint
 
@@ -40,22 +40,79 @@ Before using the API, we need to enable it in the **API permissions** under the 
 
 1. Go to **Azure Active Directory** and select the application we registered.
 2. Select **API permissions** on the left sidebar and click **+ Add a permission**.
-
-The endpoint we're using: 
+3. In **Request API permissions**, select **Sharepoint -> Application permissions -> Sites.ReadWrite.All**, and add the permission.
+4. If necessary, grand admin consent for the permissions.
+5. Paste the following url in the browser to retreive the code for getting accessToken:
 ```
+http method: GET
+
 https://login.microsoftonline.com/13571a4c-345f-42f7-947b-44dc62efec3b/oauth2/v2.0/authorize?
 client_id=<Your-app-client-id>
 &response_type=code
 &redirect_uri=http%3A%2F%2Flocalhost:3000%2Fapi%2Fauth%2Flogin
 &response_mode=query
-&scope=Sites.Read.All
+&scope=Sites.ReadWrite.All
+&state=54321
+```
+| Query Param  | Description |
+| -----------  | ------------|
+| client_id    | *This is the client id for your application. You can get it in the **Overview** section.|
+| response_type| "code" |
+|redirect_uri  |* The redirect uri under the **Authentication** section|
+|response_mode |"query"|
+|scope         |"https://{your-sharepoint-tenant}-my.sharepoint.com/Sites.ReadWriteAll" <br /> * Note: This sharepoint tenant id is not the same with your application tenant id. |
+|state         |*You could put whatever here|
+
+This step is to ask your consent of accessing sharepoint. The code we get here doesn't have the scope for resetting Sharepoint cache though.
+Therefore, we need to make a similar request with `scope=https://{your-sharepoint-tenant-id}-my.sharepoint.com/Sites.ReadWrite.All`
+
+The example would be 
+```
+http method: GET
+
+https://login.microsoftonline.com/13571a4c-345f-42f7-947b-44dc62efec3b/oauth2/v2.0/authorize?
+client_id=<Your-app-client-id>
+&response_type=code
+&redirect_uri=http%3A%2F%2Flocalhost:3000%2Fapi%2Fauth%2Flogin
+&response_mode=query
+&scope=https://{your-sharepoint-tenant-id}-my.sharepoint.com/Sites.ReadWrite.All
 &state=54321
 ```
 
+Again, paste the url in the browser and you would be redirect with a url that contains the code with the right scope.
+
+With the code, you could use Postman or other similar service, use the following url to get the accessToken.
+
+```
+https://login.microsoftonline.com/13571a4c-345f-42f7-947b-44dc62efec3b/oauth2/v2.0/token?
+client_id=<Your-app-client-id>
+&scope=https://<your-sharepoint-tenant-id>-my.sharepoint.com/Sites.ReadWrite.All
+&code=<The-code-you-just-get>
+&grant_type=authorization_code
+&client_secret=<One-of-the-client-secrets-in-your-app>
+&redirect_uri=http%3A%2F%2Flocalhost:3000%2Fapi%2Fauth%2Flogin
+```
+
+You are expected to receive the response in json with `access_token`.
+
+The last step would be making a request to the following url to reset the cache.
+
+```
+http method: GET
+
+https://<your-tenant-id>-my.sharepoint.com/_api/v2.0/drive/apps?forceRefresh=1
+
+with headers: {
+    Authorization: Bearer <access-token>
+}
+```
+
+The response should be your file handler configurations.
 
 
-# WebViewer Integration with Filehandler
+# Deployment in production
+After the development, you may want to deploy your server and redirect the filehandler to the hosted server.
 
-## Point the file handler to specified domain
+You can achieve this by change the **Manifest** in your application.
 
-# Deployment
+Change the `logoutUrl` with your new domain but with the same path. Change the `url` in the object of the array `replyUrlsWithType`.
