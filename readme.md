@@ -5,7 +5,7 @@
 3. Select **Azure Active Directory**
 4. On the left sidebar, select **App registrations**
 5. Click **+ New registration**
-6. Enter a name that you find it easily, ex. "Webviewer heloper" and click **register**
+6. Enter a name that you find it easily, ex. "Webviewer helper" and click **register**
 7. After the registration, click the **API permissions** on the left sidebar and add the following permissions: openid, Directory.AccessAsUser.All, User.Read.
 8. Consent the permissions that you've just added.
 9. Click **Authentication** on the left side bar, and click **+ Add a platform** on the top.
@@ -22,7 +22,7 @@ To set up the project, download the code in this repository.
 
 2. Run `npm run setup:dev` to start setting up app registration for the webviewer demo. 
 
-3. In the console when prompted, enter the clientId and **client id** and **tenant id**.
+3. In the console when prompted, enter the **client id** and **tenant id**.
 
 4. The console should provide a link for you to enter verification code for Microsoft. Open the link in the browser and enter the given code.
 
@@ -46,7 +46,7 @@ Before using the API, we need to enable it in the **API permissions** under the 
 ```
 http method: GET
 
-https://login.microsoftonline.com/13571a4c-345f-42f7-947b-44dc62efec3b/oauth2/v2.0/authorize?
+https://login.microsoftonline.com/<TENANT-ID-IN_ENV>/oauth2/v2.0/authorize?
 client_id=<Your-app-client-id>
 &response_type=code
 &redirect_uri=http%3A%2F%2Flocalhost:3000%2Fapi%2Fauth%2Flogin

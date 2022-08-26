@@ -14,7 +14,6 @@ const EnsureApp = async (token) => {
     enter("Creating App");
 
     const headers = getHeaders(token);
-    console.log(headers);
     const appsResp = await axios.get(`https://graph.microsoft.com/v1.0/applications?$filter=displayName eq '${appDisplayName}'&$select=displayName,id,appId`,
         {
             ...headers,
@@ -80,8 +79,6 @@ const EnsureApp = async (token) => {
     if (principalInfos.length < 1) {
         throw Error("Could not locate 'Microsoft Graph' service principal");
     }
-
-    console.log(principalInfos);
 
     await axios.post(`https://graph.microsoft.com/v1.0/oauth2PermissionGrants`,
         {

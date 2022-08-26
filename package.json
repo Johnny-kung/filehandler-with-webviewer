@@ -6,7 +6,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start:dev": "nodemon server.js",
-    "setup:dev": "node ./setup/index.js"
+    "setup:dev": "npm install && node ./setup/index.js"
   },
   "author": "",
   "license": "ISC",
