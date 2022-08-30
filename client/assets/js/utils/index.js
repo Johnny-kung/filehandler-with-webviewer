@@ -6,11 +6,6 @@ async function uploadLargeFile(itemUrl, content, token) {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-            item: {
-              "@microsoft.graph.conflictBehavior": "replace",
-            },
-        }),
     });
     const uploadRequestRespJson = await uploadRequestResp.json();
     if (uploadRequestRespJson.error) {
